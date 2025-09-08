@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MBZUAI ACM Terminal - Interactive terminal interface for the MBZUAI ACM Student Chapter">
+    <meta name="keywords" content="MBZUAI, ACM, terminal, competitive programming, AI, machine learning">
+    <meta name="author" content="MBZUAI ACM Student Chapter">
+    <title>MBZUAI ACM Terminal</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>">
+    <script src="react.development.js"></script>
+    <script src="react-dom.development.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        // Pure JavaScript version - no JSX, no Babel needed
+        const { useState, useEffect, useRef, useMemo } = React;
+        
+        const LINKS = {
+            discord: "https://example.com/discord",
+            github: "https://github.com/mbzuai-acm",
+            email: "mailto:acm@mbzuai.ac.ae",
+            join: "https://forms.gle/nGWaWPL7W3hQoasbA",
+            instagram: "https://instagram.com/mbzuai_acm",
+            icpc: "https://icpc.global/",
+            acm: "https://www.acm.org/",
+        };
+
+        const ASCII = `
+              ____                     ,----,                                                                                ____   
+            ,'  , \`.    ,---,.       .'   .\`|               ,---,         ,---,             ,---,         ,----..          ,'  , \`. 
+         ,-+-,.' _ |  ,'  .'  \\   .'   .'   ;       ,--,   '  .' \\     ,\`--.' |            '  .' \\       /   /   \\      ,-+-,.' _ | 
+      ,-+-. ;   , ||,---.' .' | ,---, '    .'     ,'_ /|  /  ;    '.   |   :  :           /  ;    '.    |   :     :  ,-+-. ;   , || 
+     ,--.'|'   |  ;||   |  |: | |   :     ./ .--. |  | : :  :       \\  :   |  '          :  :       \\   .   |  ;. / ,--.'|'   |  ;| 
+    |   |  ,', |  '::   :  :  / ;   | .'  /,'_ /| :  . | :  |   /\\   \\ |   :  |          :  |   /\\   \\  .   ; /--\` |   |  ,', |  ': 
+    |   | /  | |  ||:   |    ;  \`---' /  ; |  ' | |  . . |  :  ' ;.   :'   '  ;          |  :  ' ;.   : ;   | ;    |   | /  | |  || 
+    '   | :  | :  |,|   :     \\   /  ;  /  |  | ' |  | | |  |  ;/  \\   \\   |  |          |  |  ;/  \\   \\|   : |    '   | :  | :  |, 
+    ;   . |  ; |--' |   |   . |  ;  /  /--,:  | | :  ' ; '  :  | \\  \\ ,'   :  ;          '  :  | \\  \\ ,'.   | '___ ;   . |  ; |--'  
+    |   : |  | ,    '   :  '; | /  /  / .\`||  ; ' |  | ' |  |  '  '--' |   |  '      ___ |  |  '  '--'  '   ; : .'||   : |  | ,     
+    |   : '  |/     |   |  | ;./__;       ::  | : ;  ; | |  :  :       '   :  |   .'  .\`||  :  :        '   | '/  :|   : '  |/      
+    ;   | |\`-'      |   :   / |   :     .' '  :  \`--'   \\|  | ,'       ;   |.' .'  .'   :|  | ,'        |   :    / ;   | |\`-'       
+    |   ;/          |   | ,'  ;   |  .'    :  ,      .-./\`--''         '---',---, '   .' \`--''           \\   \\ .'  |   ;/           
+    '---'           \`----'    \`---'         \`--\`----'                       ;   |  .'                     \`---\`    '---'            
+                                                                           \`---'                                                   
+`;
+
+        // Virtual filesystem constants
+        const HOME_PATH = "/home/guest";
+        function createInitialFS() {
+            return {
+                type: "dir",
+                children: {
+                    home: {
+                        type: "dir",
+                        children: {
+                            guest: {
+                                type: "dir",
+                                children: {
+                                    documents: { type: "dir", children: { "readme.txt": { type: "file", content: "Welcome to MBZUAI ACM terminal." } } },
+                                    projects: { type: "dir", children: { "hello.js": { type: "file", content: "console.log('hello');" } } },
+                                    downloads: { type: "dir", children: {} },
+                                    ".profile": { type: "file", content: "# user profile" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        function XACMTerminal() {
+            const [tabs, setTabs] = useState([{
+                id: 1,
+                title: "Terminal 1",
+                lines: [],
+                input: "",
+                isTyping: true,
+                cwd: HOME_PATH,
+                fs: createInitialFS()
+            }]);
+            const [activeTabIndex, setActiveTabIndex] = useState(0);
+            const [theme, setTheme] = useState("green");
+            const [nextTabId, setNextTabId] = useState(2);
+            const endRef = useRef(null);
+
+            // Current tab shortcuts
+            const currentTab = tabs[activeTabIndex];
+            const lines = currentTab?.lines || [];
+            const input = currentTab?.input || "";
+            const isTyping = currentTab?.isTyping || false;
+            const cwd = currentTab?.cwd || HOME_PATH;
+            const vfs = currentTab?.fs || createInitialFS();
+
+            const palette = useMemo(() => {
+                switch (theme) {
+                    case "amber":
+                        return {
+                            glow: "shadow-[0_0_20px_rgba(245,158,11,0.35)]",
+                            primary: "text-amber-400",
+                            accent: "text-amber-300",
+                            caret: "bg-amber-400",
+                        };
+                    case "ice":
+                        return {
+                            glow: "shadow-[0_0_20px_rgba(94,234,212,0.35)]",
+                            primary: "text-teal-200",
+                            accent: "text-cyan-200",
+                            caret: "bg-teal-200",
+                        };
+                    default:
+                        return {
+                            glow: "shadow-[0_0_20px_rgba(34,197,94,0.35)]",
+                            primary: "text-emerald-300",
+                            accent: "text-emerald-200",
+                            caret: "bg-emerald-300",
+                        };
+                }
+            }, [theme]);
+
+            const scrollToEnd = () => endRef.current?.scrollIntoView({ behavior: "smooth" });
+            useEffect(scrollToEnd, [lines.length]);
+
+            useEffect(() => {
+                if (currentTab && currentTab.isTyping) {
+                    startTypingAnimation();
+                }
+            }, [activeTabIndex]);
+
+            // Update boot messages when theme changes
+            useEffect(() => {
+                if (!isTyping && lines.length >= 2) {
+                    const firstLine = lines[0];
+                    const secondLine = lines[1];
+                    
+                    // Check if these are boot messages by looking for the key
+                    if (firstLine && firstLine.key && firstLine.key.includes('boot1') && 
+                        secondLine && secondLine.key && secondLine.key.includes('boot2')) {
+                        const now = new Date();
+                        const bootMessages = [
+                            `Booting MBZUAI ACM terminal… ${now.toLocaleString()}`,
+                            "Type \`help\` to see available commands."
+                        ];
+                        
+                        setLines(prev => [
+                            line(bootMessages[0], 'boot1'),
+                            line(bootMessages[1], 'boot2'),
+                            ...prev.slice(2)
+                        ]);
+                    }
+                }
+            }, [theme]);
+
+
+            // Keyboard shortcuts for tabs
+            useEffect(() => {
+                function handleKeyDown(e) {
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.key === 't') {
+                            e.preventDefault();
+                            createNewTab();
+                        } else if (e.key === 'w') {
+                            e.preventDefault();
+                            if (tabs.length > 1) {
+                                closeTab(activeTabIndex);
+                            }
+                        } else if (e.key === 'Tab') {
+                            e.preventDefault();
+                            switchToTab((activeTabIndex + 1) % tabs.length);
+                        }
+                    }
+                }
+                
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [tabs.length, activeTabIndex]);
+
+            // Tab management functions
+            function updateCurrentTab(updates) {
+                setTabs(prev => prev.map((tab, index) => 
+                    index === activeTabIndex ? { ...tab, ...updates } : tab
+                ));
+            }
+
+            function setLines(newLines) {
+                if (typeof newLines === 'function') {
+                    updateCurrentTab({ lines: newLines(lines) });
+                } else {
+                    updateCurrentTab({ lines: newLines });
+                }
+            }
+
+            function setInput(newInput) {
+                updateCurrentTab({ input: newInput });
+            }
+
+            function setIsTyping(typing) {
+                updateCurrentTab({ isTyping: typing });
+            }
+
+            function setCwd(newPath) {
+                updateCurrentTab({ cwd: newPath });
+            }
+
+            function setFs(newFs) {
+                updateCurrentTab({ fs: newFs });
+            }
+
+            function createNewTab() {
+                const newTab = {
+                    id: nextTabId,
+                    title: `Terminal ${nextTabId}`,
+                    lines: [],
+                    input: "",
+                    isTyping: false
+                };
+                setTabs(prev => [...prev, newTab]);
+                setActiveTabIndex(tabs.length);
+                setNextTabId(prev => prev + 1);
+            }
+
+            function closeTab(tabIndex) {
+                if (tabs.length <= 1) return; // Don't close the last tab
+                
+                setTabs(prev => prev.filter((_, index) => index !== tabIndex));
+                
+                // Adjust active tab index if necessary
+                if (tabIndex === activeTabIndex && tabIndex === tabs.length - 1) {
+                    setActiveTabIndex(tabIndex - 1);
+                } else if (tabIndex < activeTabIndex) {
+                    setActiveTabIndex(activeTabIndex - 1);
+                }
+            }
+
+            function switchToTab(index) {
+                if (index >= 0 && index < tabs.length) {
+                    setActiveTabIndex(index);
+                }
+            }
+
+            function startTypingAnimation() {
+                const now = new Date();
+                const bootMessages = [
+                    `Booting MBZUAI ACM terminal… ${now.toLocaleString()}`,
+                    "Type \`help\` to see available commands."
+                ];
+                
+                let lineIndex = 0;
+                let charIndex = 0;
+                
+                function typeCharacter() {
+                    // Typing boot messages only
+                    if (lineIndex >= bootMessages.length) {
+                        setIsTyping(false);
+                        setLines([
+                            line(bootMessages[0], 'boot1'),
+                            line(bootMessages[1], 'boot2'),
+                            br(),
+                        ]);
+                        return;
+                    }
+                    
+                    const currentMessage = bootMessages[lineIndex];
+                    const displayText = currentMessage.substring(0, charIndex + 1);
+                    
+                    if (lineIndex === 0) {
+                        setLines([typingLine(displayText, 0)]);
+                    } else {
+                        setLines([
+                            line(bootMessages[0], 'boot1'),
+                            typingLine(displayText, 1)
+                        ]);
+                    }
+                    
+                    charIndex++;
+                    
+                    if (charIndex >= currentMessage.length) {
+                        setTimeout(() => {
+                            lineIndex++;
+                            charIndex = 0;
+                            typeCharacter();
+                        }, 200); // 4-second animation pause between boot lines
+                    } else {
+                        const delay = Math.random() * 10 + 45; // 4-second animation typing 45-55ms per character
+                        setTimeout(typeCharacter, delay);
+                    }
+                }
+                
+                typeCharacter();
+            }
+
+            function br() {
+                return React.createElement('div', { className: "h-2" });
+            }
+
+            function line(text, key) {
+                return React.createElement('div', {
+                    key: key ? `${key}-${theme}` : `line-${theme}-${Math.random()}`,
+                    className: "whitespace-pre-wrap leading-relaxed"
+                }, typeof text === "string" ? 
+                    React.createElement('span', { className: palette.primary }, text) : 
+                    text
+                );
+            }
+
+            function typingLine(text, key) {
+                return React.createElement('div', {
+                    key: key ? `${key}-${theme}` : `typing-${theme}-${Math.random()}`,
+                    className: "whitespace-pre-wrap leading-relaxed"
+                }, [
+                    React.createElement('span', { key: 'text', className: palette.primary }, text),
+                    React.createElement('span', { key: 'cursor', className: `inline-block w-2 h-4 ml-1 animate-pulse ${palette.caret}` })
+                ]);
+            }
+
+
+            function banner() {
+                return React.createElement('pre', {
+                    'aria-hidden': true,
+                    className: `select-text whitespace-pre leading-[1.05] ${palette.accent}`
+                }, ASCII);
+            }
+
+            function help() {
+                return React.createElement('div', { className: "space-y-1" }, [
+                    line("Available commands:"),
+                    line("  ls         List directory contents"),
+                    line("  cd         Change directory: cd <path> (.., ~ supported)"),
+                    line("  help       Show this help message"),
+                    line("  about      Who we are (AI + CP chapter)"),
+                    line("  events     Upcoming activities & weekly schedule"),
+                    line("  join       How to join / membership info"),
+                    line("  links      Discord, GitHub, social & resources"),
+                    line("  clear      Clear screen"),
+                ]);
+            }
+
+            function about() {
+                return React.createElement('div', { className: "space-y-2" }, [
+                    line("MBZUAI ACM — The AI + Competitive Programming hub at MBZUAI."),
+                    line("We run hands-on AI workshops, ICPC prep, hackathons, tech talks, and open-source sprints."),
+                    line("Mission: build a welcoming community where beginners level up and experts mentor, build, and compete.")
+                ]);
+            }
+
+            function events() {
+                return React.createElement('div', { className: "space-y-1" }, [
+                    line("This semester:"),
+                    line("  • Mondays  — CP Gym (graphs, DP, greedy)"),
+                    line("  • Wednesdays — AI Workshop (LLMs, CV, RL)"),
+                    line("  • Fridays  — Game/Project Night + lightning talk"),
+                    line("  • Monthly  — Mini-hack / Kaggle / ICPC mock round"),
+                    line("Pro tip: join Discord for sign-ups & reminders.")
+                ]);
+            }
+
+            function join() {
+                return React.createElement('div', { className: "space-y-2" }, [
+                    line("Become a member in 60 seconds:"),
+                    line(`  1) Fill the form → ${LINKS.join}`),
+                    line(`  2) Hop on Discord → ${LINKS.discord}`),
+                    line("  3) Say hi in #introductions and grab a mentor/buddy ✨"),
+                    line("ACM global membership recommended for conference access & perks → https://www.acm.org/")
+                ]);
+            }
+
+            function links() {
+                return React.createElement('div', { className: "space-y-1" }, [
+                    line(`Discord   → ${LINKS.discord}`),
+                    line(`GitHub    → ${LINKS.github}`),
+                    line(`Email     → ${LINKS.email}`),
+                    line(`Instagram → ${LINKS.instagram}`),
+                    line(`ACM       → ${LINKS.acm}`),
+                    line(`ICPC      → ${LINKS.icpc}`)
+                ]);
+            }
+
+            // --- Simple virtual filesystem helpers ---
+            function resolvePath(path) {
+                if (!path || path.trim() === "") return currentTab.cwd;
+                if (path.startsWith("~")) path = path.replace("~", HOME_PATH);
+                let full = path.startsWith("/") ? path : (currentTab.cwd + "/" + path);
+                const parts = full.split("/").filter(Boolean);
+                const stack = [];
+                for (const p of parts) {
+                    if (p === ".") continue;
+                    if (p === "..") stack.pop(); else stack.push(p);
+                }
+                return "/" + stack.join("/");
+            }
+
+            function getNode(path) {
+                const parts = path.split("/").filter(Boolean);
+                let node = vfs;
+                for (const part of parts) {
+                    if (!node.children || !node.children[part]) return null;
+                    node = node.children[part];
+                }
+                return node;
+            }
+
+            function listDirectory() {
+                const node = getNode(currentTab.cwd);
+                if (!node || node.type !== "dir") return line("ls: not a directory");
+                const names = Object.keys(node.children || {});
+                const dirs = names.filter(n => node.children[n].type === 'dir').sort();
+                const files = names.filter(n => node.children[n].type === 'file').sort();
+                const render = [];
+                render.push(line(currentTab.cwd.replace(HOME_PATH, "~")));
+                
+                // Create styled directory entries
+                dirs.forEach(d => {
+                    render.push(React.createElement('div', {
+                        key: `dir-${d}-${theme}`,
+                        className: "whitespace-pre-wrap leading-relaxed"
+                    }, React.createElement('span', { 
+                        className: `${palette.primary} font-bold` 
+                    }, `${d}/`)));
+                });
+                
+                files.forEach(f => render.push(line(f)));
+                return React.createElement('div', { className: "space-y-1" }, render);
+            }
+
+            function changeDirectory(arg) {
+                const target = resolvePath(arg || HOME_PATH);
+                const node = getNode(target);
+                if (!node) return line(`cd: no such file or directory: ${arg || ''}`);
+                if (node.type !== 'dir') return line(`cd: not a directory: ${arg}`);
+                setCwd(target);
+                return null;
+            }
+
+
+            function unknown(cmd) {
+                return line(`Command not found: ${cmd}. Try 'help'.`);
+            }
+
+            function handleCommand(raw) {
+                const cmd = raw.trim();
+                if (!cmd) return;
+                const [name, arg] = cmd.split(/\s+/, 2);
+
+                switch (name.toLowerCase()) {
+                    case "help":
+                        push(help());
+                        break;
+                    case "about":
+                        push(about());
+                        break;
+                    case "events":
+                        push(events());
+                        break;
+                    case "join":
+                        push(join());
+                        break;
+                    case "links":
+                        push(links());
+                        break;
+                    case "clear":
+                        setLines([]);
+                        break;
+                    case "ls":
+                        push(listDirectory());
+                        break;
+                    case "cd":
+                        push(changeDirectory(arg));
+                        break;
+                    case "theme":
+                        if (["green", "amber", "ice"].includes((arg || "").toLowerCase())) {
+                            setTheme(arg.toLowerCase());
+                            push(line(`Theme set to ${arg}.`));
+                        } else {
+                            push(line("Usage: theme green|amber|ice"));
+                        }
+                        break;
+                    case "newtab":
+                        createNewTab();
+                        push(line(`New tab created: Terminal ${nextTabId - 1}`));
+                        break;
+                    case "closetab":
+                        if (tabs.length <= 1) {
+                            push(line("Cannot close the last tab."));
+                        } else {
+                            const tabTitle = currentTab.title;
+                            closeTab(activeTabIndex);
+                            push(line(`Closed tab: ${tabTitle}`));
+                        }
+                        break;
+                    default:
+                        push(unknown(cmd));
+                }
+            }
+
+            function push(el) {
+                setLines((prev) => [...prev, el]);
+            }
+
+            function onSubmit(e) {
+                e.preventDefault();
+                const current = input;
+                if (!current.trim()) return;
+                const prompt = React.createElement('div', {
+                    key: `prompt-${theme}-${Date.now()}`,
+                    className: "whitespace-pre-wrap"
+                }, [
+                    React.createElement('span', { key: 'arrow', className: "text-white" }, "▶ "),
+                    React.createElement('span', { key: 'user', className: `${palette.accent}` }, "guest"),
+                    React.createElement('span', { key: 'at', className: "text-neutral-500" }, "@"),
+                    React.createElement('span', { key: 'host', className: `${palette.accent}` }, "mbzuai"),
+                    " ",
+                    React.createElement('span', { key: 'path', className: `text-purple-300` }, currentTab.cwd.replace(HOME_PATH, "~")),
+                    React.createElement('span', { key: 'dollar', className: "text-neutral-500" }, " $"),
+                    " ",
+                    React.createElement('span', { key: 'cmd', className: palette.primary }, current)
+                ]);
+                setLines((prev) => [...prev, prompt]);
+                setInput("");
+                handleCommand(current);
+            }
+
+            function TabBar() {
+                return React.createElement('div', {
+                    className: "flex items-center gap-1 border-b border-neutral-800 px-4 py-1 bg-neutral-950/50"
+                }, [
+                    ...tabs.map((tab, index) => 
+                        React.createElement('div', {
+                            key: tab.id,
+                            className: `flex items-center gap-2 px-3 py-1 rounded-t-md text-sm cursor-pointer transition-colors ${
+                                index === activeTabIndex 
+                                    ? `bg-neutral-800 ${palette.primary} border-b-2 border-current` 
+                                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900'
+                            }`,
+                            onClick: () => switchToTab(index)
+                        }, [
+                            React.createElement('span', { key: 'title' }, tab.title),
+                            tabs.length > 1 && React.createElement('button', {
+                                key: 'close',
+                                className: "ml-1 hover:text-red-400 hover:bg-neutral-700 rounded px-1",
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    closeTab(index);
+                                }
+                            }, "×")
+                        ])
+                    ),
+                    React.createElement('button', {
+                        key: 'new-tab',
+                        className: `px-2 py-1 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded transition-colors`,
+                        onClick: createNewTab,
+                        title: "New tab"
+                    }, "+")
+                ]);
+            }
+
+            return React.createElement('div', {
+                className: "min-h-screen w-full bg-black text-neutral-200 font-mono"
+            }, [
+                React.createElement('div', {
+                    key: 'overlay',
+                    className: "pointer-events-none fixed inset-0 opacity-[0.06] mix-blend-screen",
+                    style: { 
+                        backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,.15) 0, rgba(255,255,255,.15) 1px, transparent 2px, transparent 4px)" 
+                    }
+                }),
+                React.createElement('div', {
+                    key: 'container',
+                    className: "mx-auto max-w-full px-4 py-8"
+                }, [
+                    React.createElement('div', {
+                        key: 'window',
+                        className: `rounded-2xl border border-neutral-800 bg-neutral-950/70 backdrop-blur-md ${palette.glow}`
+                    }, [
+                        React.createElement('div', {
+                            key: 'header',
+                            className: "flex items-center gap-2 px-4 py-2"
+                        }, [
+                            React.createElement('div', {
+                                key: 'buttons',
+                                className: "flex gap-2"
+                            }, [
+                                React.createElement('span', { key: 'red', className: "h-3 w-3 rounded-full bg-red-500" }),
+                                React.createElement('span', { key: 'yellow', className: "h-3 w-3 rounded-full bg-yellow-500" }),
+                                React.createElement('span', { key: 'green', className: "h-3 w-3 rounded-full bg-green-500" })
+                            ]),
+                            React.createElement('div', {
+                                key: 'title',
+                                className: "ml-3 text-xs text-neutral-400"
+                            }, "MBZUAI ACM — Terminal"),
+                            React.createElement('div', {
+                                key: 'themes',
+                                className: "ml-auto flex items-center gap-2 text-xs"
+                            }, [
+                                React.createElement('button', {
+                                    key: 'green',
+                                    onClick: () => setTheme("green"),
+                                    className: "rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800"
+                                }, "green"),
+                                React.createElement('button', {
+                                    key: 'amber',
+                                    onClick: () => setTheme("amber"),
+                                    className: "rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800"
+                                }, "amber"),
+                                React.createElement('button', {
+                                    key: 'ice',
+                                    onClick: () => setTheme("ice"),
+                                    className: "rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800"
+                                }, "ice")
+                            ])
+                        ]),
+                        React.createElement(TabBar, { key: 'tabs' }),
+                        React.createElement('div', {
+                            key: 'body',
+                            className: "h-[80vh] overflow-auto px-4 py-4 sm:h-[85vh]"
+                        }, [
+                            React.createElement('div', {
+                                key: 'intro',
+                                className: "mb-3"
+                            }, [
+                                banner()
+                            ]),
+                            React.createElement('div', {
+                                key: 'output',
+                                className: "space-y-2"
+                            }, lines),
+                            React.createElement('div', { key: 'end', ref: endRef })
+                        ].filter(Boolean)),
+                        React.createElement('form', {
+                            key: 'form',
+                            onSubmit: onSubmit,
+                            className: "flex items-center gap-2 border-t border-neutral-800 px-4 py-2"
+                        }, [
+                            React.createElement('span', { key: 'arrow', className: "text-white" }, "▶ "),
+                            React.createElement('span', { key: 'user', className: `${palette.accent}` }, "guest"),
+                            React.createElement('span', { key: 'at', className: "text-neutral-500" }, "@"),
+                            React.createElement('span', { key: 'host', className: `${palette.accent}` }, "mbzuai"),
+                            " ",
+                            React.createElement('span', { key: 'path', className: `text-purple-300` }, currentTab.cwd.replace(HOME_PATH, "~")),
+                            React.createElement('span', { key: 'dollar', className: "text-neutral-500" }, " $"),
+                            React.createElement('input', {
+                                key: 'input',
+                                autoFocus: !isTyping,
+                                disabled: isTyping,
+                                value: input,
+                                onChange: (e) => setInput(e.target.value),
+                                className: `flex-1 bg-transparent outline-none placeholder-neutral-600 text-neutral-100 ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`,
+                                placeholder: isTyping ? "please wait..." : "type a command (help, about, events, join, links, theme…)",
+                                'aria-label': "Terminal input"
+                            }),
+                            !isTyping && React.createElement('span', {
+                                key: 'caret',
+                                className: `h-4 w-2 animate-pulse ${palette.caret}`,
+                                'aria-hidden': true
+                            })
+                        ].filter(Boolean))
+                    ]),
+                    React.createElement('div', {
+                        key: 'footer',
+                        className: "mx-auto mt-4 text-center text-xs text-neutral-500"
+                    }, `© ${new Date().getFullYear()} MBZUAI ACM • Built with ❤️ by the chapter web team • ACM: acm.org`)
+                ])
+            ]);
+        }
+
+        // Render the component
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(XACMTerminal));
+    </script>
+</body>
+</html>

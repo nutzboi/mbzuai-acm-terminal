@@ -1,0 +1,28 @@
+# GitHub Pages Configuration for MBZUAI ACM Terminal
+
+# Site settings
+title: "MBZUAI ACM Terminal"
+description: "Interactive terminal interface for the MBZUAI ACM Student Chapter"
+url: "https://mbzuai-acm.github.io"
+baseurl: "/mbzuai-acm-terminal"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - LICENSE
+  - .gitignore
+  - .nojekyll
+
+# Include files
+include:
+  - .nojekyll
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
