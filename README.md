@@ -1,6 +1,6 @@
 # MBZUAI ACM Terminal
 
-A beautiful, interactive terminal-themed landing page for MBZUAI ACM Student Chapter (AI + Competitive Programming).
+A beautiful, interactive terminal-themed landing page for MBZUAI ACM Student Chapter.
 
 ---
 
