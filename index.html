@@ -141,7 +141,7 @@
                         const now = new Date();
                         const bootMessages = [
                             `Booting MBZUAI ACM terminal… ${now.toLocaleString()}`,
-                            "Type \`help\` to see available commands."
+                            "Type \`help\` to see commands or \`join\` to be one of us."
                         ];
                         
                         setLines(prev => [
@@ -244,7 +244,7 @@
                 const now = new Date();
                 const bootMessages = [
                     `Booting MBZUAI ACM terminal… ${now.toLocaleString()}`,
-                    "Type \`help\` to see available commands."
+                    "Type \`help\` to see commands or \`join\` to be one of us."
                 ];
                 
                 let lineIndex = 0;
@@ -352,17 +352,29 @@
                     line("  • Wednesdays — AI Workshop (LLMs, CV, RL)"),
                     line("  • Fridays  — Game/Project Night + lightning talk"),
                     line("  • Monthly  — Mini-hack / Kaggle / ICPC mock round"),
-                    line("Pro tip: join Discord for sign-ups & reminders.")
+                    line("Pro tip: check our social media for sign-ups & reminders.")
                 ]);
             }
 
             function join() {
+                const openForm = () => {
+                    window.open(
+                        LINKS.join,
+                        'mbzuai-acm-form',
+                        'width=800,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+                    );
+                };
+
                 return React.createElement('div', { className: "space-y-2" }, [
-                    line("Become a member in 60 seconds:"),
-                    line(`  1) Fill the form → ${LINKS.join}`),
-                    line(`  2) Hop on Discord → ${LINKS.discord}`),
-                    line("  3) Say hi in #introductions and grab a mentor/buddy ✨"),
-                    line("ACM global membership recommended for conference access & perks → https://www.acm.org/")
+                    line("Join MBZUAI ACM!"),
+                    line(""),
+                    line("Click the button below to open the membership form:"),
+                    React.createElement('div', { className: "mt-2" }, [
+                        React.createElement('button', {
+                            onClick: openForm,
+                            className: `px-3 py-1 bg-black border border-neutral-600 text-green-400 hover:bg-neutral-900 hover:text-green-300 font-mono text-sm transition-colors cursor-pointer`
+                        }, "[ OPEN FORM ]")
+                    ])
                 ]);
             }
 
